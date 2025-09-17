@@ -162,26 +162,18 @@ module.exports = {
             );
 
             container.addSeparatorComponents(separator => separator);
-
-            // Add Pokemon sprite
-            if (pokemon.sprites.other['official-artwork'].front_default) {
-                try {
-                    container.addMediaGalleryComponents(
-                        new MediaGalleryBuilder()
-                            .addItems(
-                                new MediaGalleryItemBuilder()
-                                    .setURL(pokemon.sprites.other['official-artwork'].front_default)
-                            )
-                    );
-                } catch (error) {
-                    console.warn('Failed to add Pokemon image:', error);
-                }
-            }
-
+            
             // Basic information
-            container.addTextDisplayComponents(
-                textDisplay => textDisplay
-                    .setContent(`**__Basic Information__**\n**Type${pokemon.types.length > 1 ? 's' : ''}:** ${types}\n**Height:** ${(pokemon.height / 10).toFixed(1)} m\n**Weight:** ${(pokemon.weight / 10).toFixed(1)} kg\n**Abilities:** ${abilities}`)
+            container.addSectionComponents(
+                section => section
+                    .addTextDisplayComponents(
+                        textDisplay => textDisplay
+                            .setContent(`**__Basic Information__**\n**Type${pokemon.types.length > 1 ? 's' : ''}:** ${types}\n**Height:** ${(pokemon.height / 10).toFixed(1)} m\n**Weight:** ${(pokemon.weight / 10).toFixed(1)} kg\n**Abilities:** ${abilities}`)
+                    )
+                    .setThumbnailAccessory(
+                        thumbnail => thumbnail
+                            .setURL(pokemon.sprites.other['official-artwork'].front_default)
+                    )
             );
 
             container.addSeparatorComponents(separator => separator);

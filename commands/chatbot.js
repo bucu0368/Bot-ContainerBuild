@@ -11,7 +11,7 @@ function getErrorColor(client) {
     return client.config?.ErrorColor || '#ff0000';
 }
 
-const GROQ_API_KEY = 'apikey here';
+const GROQ_API_KEY = 'get apikey here https://console.groq.com/keys';
 
 module.exports = {
     data: new SlashCommandBuilder()

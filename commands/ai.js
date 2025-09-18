@@ -10,8 +10,8 @@ function getErrorColor(client) {
     return client.config?.ErrorColor || '#ff0000';
 }
 
-const GROQ_API_KEY = 'gsk_8lY0TG7r9QU90BH71NUuCKP8r4MFHWQv2k59k1sOQgX';
-const IMAGE_API_KEY = 'Apikey-EFychKOxf1oIfxkHtBDCuYC';
+const GROQ_API_KEY = 'get apikey here https://console.groq.com/keys';
+const IMAGE_API_KEY = 'join https://discord.gg/Zg2XkS5hq9 for get apikey';
 
 module.exports = {
     data: new SlashCommandBuilder()

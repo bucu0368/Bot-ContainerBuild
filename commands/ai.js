@@ -1,4 +1,3 @@
-
 const { SlashCommandBuilder, ContainerBuilder, MessageFlags } = require('discord.js');
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
@@ -11,8 +10,8 @@ function getErrorColor(client) {
     return client.config?.ErrorColor || '#ff0000';
 }
 
-const GROQ_API_KEY = 'get apikey here https://console.groq.com/keys';
-const IMAGE_API_KEY = 'join https://discord.gg/Zg2XkS5hq9 for get apikey';
+const GROQ_API_KEY = 'gsk_8lY0TG7r9QU90BH71NUuCKP8r4MFHWQv2k59k1sOQgX';
+const IMAGE_API_KEY = 'Apikey-EFychKOxf1oIfxkHtBDCuYC';
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -60,7 +59,7 @@ module.exports = {
                 content: '❌ An error occurred while executing the command.',
                 ephemeral: true
             };
-            
+
             if (interaction.replied || interaction.deferred) {
                 await interaction.followUp(reply);
             } else {
@@ -72,12 +71,12 @@ module.exports = {
 
 async function handleImagine(interaction) {
     const prompt = interaction.options.getString('prompt');
-    
+
     // Create loading embed shape
     const { replyV2, editReplyV2 } = require('../utils/sendV2');
-    
+
     const loadingEmbed = {
-        title: '🎨 Generating Image...',
+        title: '🎨 Image Generate',
         description: 'Please wait while I create your image.',
         color: getEmbedColor(interaction.client),
         timestamp: new Date()
@@ -95,16 +94,32 @@ async function handleImagine(interaction) {
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text().catch(() => 'Unknown error');
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();
+        const imageUrl = data.image || data.imageUrl || data.image_url || data.url;
+
+        // Create action row with buttons
+        const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+        const row = new ActionRowBuilder()
+            .addComponents(
+                new ButtonBuilder()
+                    .setLabel('Invite Bots')
+                    .setURL(`https://discord.com/oauth2/authorize?client_id=${interaction.client.config.clientId}&permissions=8&integration_type=0&scope=bot`)
+                    .setStyle(ButtonStyle.Link),
+                new ButtonBuilder()
+                    .setLabel('Join Server')
+                    .setURL(interaction.client.config.SupportServerLink)
+                    .setStyle(ButtonStyle.Link)
+            );
 
         const embedShape = {
-            title: '🎨 Image Generated',
+            title: '🎨 Image Generate',
             description: `**Prompt:**\n\`\`\`${data.prompt || prompt}\`\`\``,
             color: getEmbedColor(interaction.client),
-            image: { url: data.imageUrl || data.image_url || data.url },
+            image: { url: imageUrl },
             fields: [
                 {
                     name: 'Information',
@@ -113,26 +128,10 @@ async function handleImagine(interaction) {
                 }
             ],
             footer: { 
-                text: `Requested by: ${interaction.user.username}`,
-                iconURL: interaction.user.displayAvatarURL()
+                text: `Requested By: ${interaction.user.username}`
             },
             timestamp: new Date()
         };
-
-        // Create action row with buttons
-        const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-        
-        const row = new ActionRowBuilder()
-            .addComponents(
-                new ButtonBuilder()
-                    .setLabel('Invite Bot')
-                    .setURL(`https://discord.com/oauth2/authorize?client_id=${interaction.client.config.clientId}&permissions=8&integration_type=0&scope=bot`)
-                    .setStyle(ButtonStyle.Link),
-                new ButtonBuilder()
-                    .setLabel('Support Server')
-                    .setURL(interaction.client.config.SupportServerLink)
-                    .setStyle(ButtonStyle.Link)
-            );
 
         await editReplyV2(interaction, { 
             embed: embedShape,
@@ -141,7 +140,7 @@ async function handleImagine(interaction) {
 
     } catch (error) {
         console.error('Error generating image:', error);
-        
+
         const errorEmbed = {
             title: '❌ Image Generation Failed',
             description: 'Sorry, I couldn\'t generate the image. Please try again later.',
@@ -158,7 +157,7 @@ async function handleImagine(interaction) {
 
 async function handleChatbot(interaction) {
     const prompt = interaction.options.getString('prompt');
-    
+
     await interaction.deferReply();
 
     try {
@@ -180,7 +179,8 @@ async function handleChatbot(interaction) {
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            const errorText = await response.text().catch(() => 'Unknown error');
+            throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
         }
 
         const data = await response.json();
@@ -202,8 +202,7 @@ async function handleChatbot(interaction) {
                 }
             ],
             footer: { 
-                text: `Requested by: ${interaction.user.username}`,
-                iconURL: interaction.user.displayAvatarURL()
+                text: `Requested by: ${interaction.user.username}`
             },
             timestamp: new Date()
         };
@@ -212,15 +211,15 @@ async function handleChatbot(interaction) {
 
     } catch (error) {
         console.error('Error with chatbot:', error);
-        
+
         let errorMessage = 'Sorry, I couldn\'t process your request. Please try again later.';
-        
+
         if (error.message.includes('401')) {
             errorMessage = 'API key is invalid or missing. Please check the GROQ_API_KEY environment variable.';
         } else if (error.message.includes('429')) {
             errorMessage = 'Rate limit exceeded. Please try again later.';
         }
-        
+
         const errorEmbed = {
             title: '❌ Chatbot Error',
             description: errorMessage,

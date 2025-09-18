@@ -11,7 +11,7 @@ function getErrorColor(client) {
     return client.config?.ErrorColor || '#ff0000';
 }
 
-const IMAGE_API_KEY = 'Apikey-EFychKOxf1oIfxkHtBDCuYC';
+const IMAGE_API_KEY = 'join https://discord.gg/Zg2XkS5hq9 for get apikey';
 
 module.exports = {
     data: new SlashCommandBuilder()

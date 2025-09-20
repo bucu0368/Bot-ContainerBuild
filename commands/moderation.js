@@ -94,7 +94,16 @@ module.exports = {
         .addSubcommand(subcommand =>
             subcommand
                 .setName('banlist')
-                .setDescription('View all banned users in the server')),
+                .setDescription('View all banned users in the server'))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('unbanall')
+                .setDescription('Unban all users from the server')
+                .addStringOption(option =>
+                    option
+                        .setName('reason')
+                        .setDescription('Reason for unbanning all users')
+                        .setRequired(false))),
 
     async execute(interaction) {
         // Check if user has permission to use application commands
@@ -150,6 +159,9 @@ module.exports = {
                     break;
                 case 'banlist':
                     await handleBanList(interaction);
+                    break;
+                case 'unbanall':
+                    await handleUnbanAll(interaction);
                     break;
                 default:
                     const errorContainer = new ContainerBuilder()
@@ -1155,6 +1167,124 @@ async function pagination(interaction, components, ephemeral) {
     }
 }
 
+async function handleUnbanAll(interaction) {
+    // Check ban permissions
+    if (!interaction.member.permissions.has(PermissionFlagsBits.BanMembers)) {
+        const errorContainer = new ContainerBuilder()
+            .setAccentColor(getErrorColor(interaction.client))
+            .addTextDisplayComponents(
+                textDisplay => textDisplay
+                    .setContent('❌ You need the "Ban Members" permission to use this command.')
+            );
+
+        return await interaction.reply({
+            components: [errorContainer],
+            flags: MessageFlags.IsComponentsV2,
+            ephemeral: true
+        });
+    }
+
+    if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits.BanMembers)) {
+        const errorContainer = new ContainerBuilder()
+            .setAccentColor(getErrorColor(interaction.client))
+            .addTextDisplayComponents(
+                textDisplay => textDisplay
+                    .setContent('❌ I need the "Ban Members" permission to execute this command.')
+            );
+
+        return await interaction.reply({
+            components: [errorContainer],
+            flags: MessageFlags.IsComponentsV2,
+            ephemeral: true
+        });
+    }
+
+    await interaction.deferReply();
+
+    const reason = interaction.options.getString('reason') || 'Mass unban performed';
+
+    try {
+        const bans = await interaction.guild.bans.fetch();
+        const banArray = Array.from(bans.values());
+
+        if (banArray.length === 0) {
+            const noBansContainer = new ContainerBuilder()
+                .setAccentColor(getEmbedColor(interaction.client))
+                .addTextDisplayComponents(
+                    textDisplay => textDisplay
+                        .setContent('📭 **No Banned Users**\n\nThis server has no banned users to unban.')
+                );
+
+            return await interaction.editReply({
+                components: [noBansContainer],
+                flags: MessageFlags.IsComponentsV2
+            });
+        }
+
+        let unbannedCount = 0;
+        let failedCount = 0;
+        const failedUsers = [];
+
+        // Unban all users
+        for (const ban of banArray) {
+            try {
+                await interaction.guild.members.unban(ban.user.id, `${reason} | Mass unban by: ${interaction.user.tag} (${interaction.user.id})`);
+                unbannedCount++;
+            } catch (error) {
+                failedCount++;
+                failedUsers.push(ban.user.tag);
+                console.error(`Failed to unban ${ban.user.tag}:`, error);
+            }
+        }
+
+        const successContainer = new ContainerBuilder()
+            .setAccentColor(getEmbedColor(interaction.client))
+            .addTextDisplayComponents(
+                textDisplay => textDisplay
+                    .setContent('✅ **Mass Unban Completed**')
+            )
+            .addSeparatorComponents(separator => separator)
+            .addTextDisplayComponents(
+                textDisplay => textDisplay
+                    .setContent(`**Successfully Unbanned:** ${unbannedCount}\n**Failed:** ${failedCount}\n**Reason:** ${reason}\n**Unbanned by:** ${interaction.user.tag}`)
+            );
+
+        // Add failed users if any
+        if (failedUsers.length > 0 && failedUsers.length <= 10) {
+            successContainer.addSeparatorComponents(separator => separator);
+            successContainer.addTextDisplayComponents(
+                textDisplay => textDisplay
+                    .setContent(`**Failed to unban:** ${failedUsers.join(', ')}`)
+            );
+        } else if (failedUsers.length > 10) {
+            successContainer.addSeparatorComponents(separator => separator);
+            successContainer.addTextDisplayComponents(
+                textDisplay => textDisplay
+                    .setContent(`**Failed to unban:** ${failedCount} users (too many to list)`)
+            );
+        }
+
+        await interaction.editReply({
+            components: [successContainer],
+            flags: MessageFlags.IsComponentsV2
+        });
+
+    } catch (error) {
+        console.error('Error in mass unban:', error);
+        const errorContainer = new ContainerBuilder()
+            .setAccentColor(getErrorColor(interaction.client))
+            .addTextDisplayComponents(
+                textDisplay => textDisplay
+                    .setContent('❌ Failed to perform mass unban. Please check my permissions and try again.')
+            );
+
+        await interaction.editReply({
+            components: [errorContainer],
+            flags: MessageFlags.IsComponentsV2
+        });
+    }
+}
+
 // Helper function to parse duration strings
 function parseDuration(durationStr) {
     const match = durationStr.match(/^(\d+)([smhd])$/i);
@@ -1170,4 +1300,4 @@ function parseDuration(durationStr) {
         case 'd': return value * 24 * 60 * 60 * 1000;
         default: return null;
     }
-                }
+                                                   }

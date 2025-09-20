@@ -1,4 +1,3 @@
-
 const { SlashCommandBuilder, PermissionFlagsBits, ContainerBuilder, MessageFlags } = require('discord.js');
 
 // Helper function to get colors from config
@@ -334,23 +333,17 @@ async function handleBan(interaction) {
                     .setContent('🔨 **User Banned Successfully**')
             )
             .addSeparatorComponents(separator => separator)
-            .addTextDisplayComponents(
-                textDisplay => textDisplay
-                    .setContent(`**User:** ${targetUser.tag} (${targetUser.id})\n**Reason:** ${reason}\n**Banned by:** ${interaction.user.tag}`)
-            );
-
-        const { MediaGalleryBuilder, MediaGalleryItemBuilder } = require('discord.js');
-        
-        try {
-            successContainer.addMediaGalleryComponents(
-                new MediaGalleryBuilder()
-                    .addItems(
-                        new MediaGalleryItemBuilder().setURL(targetUser.displayAvatarURL())
+            .addSectionComponents(
+                section => section
+                    .addTextDisplayComponents(
+                        textDisplay => textDisplay
+                            .setContent(`**User:** ${targetUser.tag} (${targetUser.id})\n**Reason:** ${reason}\n**Banned by:** ${interaction.user.tag}`)
+                    )
+                    .setThumbnailAccessory(
+                        thumbnail => thumbnail
+                            .setURL(targetUser.displayAvatarURL())
                     )
             );
-        } catch (error) {
-            console.warn('Failed to add user avatar to container:', error);
-        }
 
         await interaction.editReply({ 
             components: [successContainer], 
@@ -439,23 +432,17 @@ async function handleUnban(interaction) {
                     .setContent('✅ **User Unbanned Successfully**')
             )
             .addSeparatorComponents(separator => separator)
-            .addTextDisplayComponents(
-                textDisplay => textDisplay
-                    .setContent(`**User:** ${bannedUser.user.tag} (${bannedUser.user.id})\n**Reason:** ${reason}\n**Unbanned by:** ${interaction.user.tag}`)
-            );
-
-        const { MediaGalleryBuilder, MediaGalleryItemBuilder } = require('discord.js');
-        
-        try {
-            successContainer.addMediaGalleryComponents(
-                new MediaGalleryBuilder()
-                    .addItems(
-                        new MediaGalleryItemBuilder().setURL(bannedUser.user.displayAvatarURL())
+            .addSectionComponents(
+                section => section
+                    .addTextDisplayComponents(
+                        textDisplay => textDisplay
+                            .setContent(`**User:** ${bannedUser.user.tag} (${bannedUser.user.id})\n**Reason:** ${reason}\n**Unbanned by:** ${interaction.user.tag}`)
+                    )
+                    .setThumbnailAccessory(
+                        thumbnail => thumbnail
+                            .setURL(bannedUser.user.displayAvatarURL())
                     )
             );
-        } catch (error) {
-            console.warn('Failed to add user avatar to container:', error);
-        }
 
         await interaction.editReply({ 
             components: [successContainer], 
@@ -588,23 +575,17 @@ async function handleTimeout(interaction) {
                     .setContent('⏰ **User Timed Out Successfully**')
             )
             .addSeparatorComponents(separator => separator)
-            .addTextDisplayComponents(
-                textDisplay => textDisplay
-                    .setContent(`**User:** ${targetUser.tag} (${targetUser.id})\n**Duration:** ${duration}\n**Reason:** ${reason}\n**Timed out by:** ${interaction.user.tag}`)
-            );
-
-        const { MediaGalleryBuilder, MediaGalleryItemBuilder } = require('discord.js');
-        
-        try {
-            successContainer.addMediaGalleryComponents(
-                new MediaGalleryBuilder()
-                    .addItems(
-                        new MediaGalleryItemBuilder().setURL(targetUser.displayAvatarURL())
+            .addSectionComponents(
+                section => section
+                    .addTextDisplayComponents(
+                        textDisplay => textDisplay
+                            .setContent(`**User:** ${targetUser.tag} (${targetUser.id})\n**Duration:** ${duration}\n**Reason:** ${reason}\n**Timed out by:** ${interaction.user.tag}`)
+                    )
+                    .setThumbnailAccessory(
+                        thumbnail => thumbnail
+                            .setURL(targetUser.displayAvatarURL())
                     )
             );
-        } catch (error) {
-            console.warn('Failed to add user avatar to container:', error);
-        }
 
         await interaction.editReply({ 
             components: [successContainer], 
@@ -705,23 +686,17 @@ async function handleUntimeout(interaction) {
                     .setContent('✅ **Timeout Removed Successfully**')
             )
             .addSeparatorComponents(separator => separator)
-            .addTextDisplayComponents(
-                textDisplay => textDisplay
-                    .setContent(`**User:** ${targetUser.tag} (${targetUser.id})\n**Reason:** ${reason}\n**Timeout removed by:** ${interaction.user.tag}`)
-            );
-
-        const { MediaGalleryBuilder, MediaGalleryItemBuilder } = require('discord.js');
-        
-        try {
-            successContainer.addMediaGalleryComponents(
-                new MediaGalleryBuilder()
-                    .addItems(
-                        new MediaGalleryItemBuilder().setURL(targetUser.displayAvatarURL())
+            .addSectionComponents(
+                section => section
+                    .addTextDisplayComponents(
+                        textDisplay => textDisplay
+                            .setContent(`**User:** ${targetUser.tag} (${targetUser.id})\n**Reason:** ${reason}\n**Timeout removed by:** ${interaction.user.tag}`)
+                    )
+                    .setThumbnailAccessory(
+                        thumbnail => thumbnail
+                            .setURL(targetUser.displayAvatarURL())
                     )
             );
-        } catch (error) {
-            console.warn('Failed to add user avatar to container:', error);
-        }
 
         await interaction.editReply({ 
             components: [successContainer], 
@@ -866,23 +841,17 @@ async function handleKick(interaction) {
                     .setContent('👢 **User Kicked Successfully**')
             )
             .addSeparatorComponents(separator => separator)
-            .addTextDisplayComponents(
-                textDisplay => textDisplay
-                    .setContent(`**User:** ${targetUser.tag} (${targetUser.id})\n**Reason:** ${reason}\n**Kicked by:** ${interaction.user.tag}`)
-            );
-
-        const { MediaGalleryBuilder, MediaGalleryItemBuilder } = require('discord.js');
-        
-        try {
-            successContainer.addMediaGalleryComponents(
-                new MediaGalleryBuilder()
-                    .addItems(
-                        new MediaGalleryItemBuilder().setURL(targetUser.displayAvatarURL())
+            .addSectionComponents(
+                section => section
+                    .addTextDisplayComponents(
+                        textDisplay => textDisplay
+                            .setContent(`**User:** ${targetUser.tag} (${targetUser.id})\n**Reason:** ${reason}\n**Kicked by:** ${interaction.user.tag}`)
+                    )
+                    .setThumbnailAccessory(
+                        thumbnail => thumbnail
+                            .setURL(targetUser.displayAvatarURL())
                     )
             );
-        } catch (error) {
-            console.warn('Failed to add user avatar to container:', error);
-        }
 
         await interaction.editReply({ 
             components: [successContainer], 
@@ -920,4 +889,4 @@ function parseDuration(durationStr) {
         case 'd': return value * 24 * 60 * 60 * 1000;
         default: return null;
     }
-}
+                    }

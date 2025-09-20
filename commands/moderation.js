@@ -90,7 +90,11 @@ module.exports = {
                     option
                         .setName('reason')
                         .setDescription('Reason for the kick')
-                        .setRequired(false))),
+                        .setRequired(false)))
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName('banlist')
+                .setDescription('View all banned users in the server')),
 
     async execute(interaction) {
         // Check if user has permission to use application commands
@@ -143,6 +147,9 @@ module.exports = {
                     break;
                 case 'kick':
                     await handleKick(interaction);
+                    break;
+                case 'banlist':
+                    await handleBanList(interaction);
                     break;
                 default:
                     const errorContainer = new ContainerBuilder()
@@ -874,6 +881,280 @@ async function handleKick(interaction) {
     }
 }
 
+async function handleBanList(interaction) {
+    // Check ban permissions
+    if (!interaction.member.permissions.has(PermissionFlagsBits.BanMembers)) {
+        const errorContainer = new ContainerBuilder()
+            .setAccentColor(getErrorColor(interaction.client))
+            .addTextDisplayComponents(
+                textDisplay => textDisplay
+                    .setContent('❌ You need the "Ban Members" permission to use this command.')
+            );
+
+        return await interaction.reply({
+            components: [errorContainer],
+            flags: MessageFlags.IsComponentsV2,
+            ephemeral: true
+        });
+    }
+
+    if (!interaction.guild.members.me.permissions.has(PermissionFlagsBits.BanMembers)) {
+        const errorContainer = new ContainerBuilder()
+            .setAccentColor(getErrorColor(interaction.client))
+            .addTextDisplayComponents(
+                textDisplay => textDisplay
+                    .setContent('❌ I need the "Ban Members" permission to execute this command.')
+            );
+
+        return await interaction.reply({
+            components: [errorContainer],
+            flags: MessageFlags.IsComponentsV2,
+            ephemeral: true
+        });
+    }
+
+    await interaction.deferReply();
+
+    try {
+        const bans = await interaction.guild.bans.fetch();
+        const banArray = Array.from(bans.values());
+
+        if (banArray.length === 0) {
+            const noBansContainer = new ContainerBuilder()
+                .setAccentColor(getEmbedColor(interaction.client))
+                .addTextDisplayComponents(
+                    textDisplay => textDisplay
+                        .setContent('📭 **No Banned Users**\n\nThis server has no banned users.')
+                );
+
+            return await interaction.editReply({
+                components: [noBansContainer],
+                flags: MessageFlags.IsComponentsV2
+            });
+        }
+
+        const itemsPerPage = 5;
+        const totalPages = Math.ceil(banArray.length / itemsPerPage);
+        const containers = [];
+
+        // Create containers for each page
+        for (let page = 0; page < totalPages; page++) {
+            const start = page * itemsPerPage;
+            const end = start + itemsPerPage;
+            const currentBans = banArray.slice(start, end);
+
+            const container = new ContainerBuilder()
+                .setAccentColor(getEmbedColor(interaction.client));
+
+            // Add title
+            container.addTextDisplayComponents(
+                textDisplay => textDisplay
+                    .setContent(`🔨 **Banned Users (Page ${page + 1}/${totalPages})**`)
+            );
+
+            container.addSeparatorComponents(separator => separator);
+
+            // Add each banned user
+            currentBans.forEach((ban, index) => {
+                const globalIndex = start + index + 1;
+                const reason = ban.reason || 'No reason provided';
+                const truncatedReason = reason.length > 100 ? reason.substring(0, 100) + '...' : reason;
+
+                container.addSectionComponents(
+                    section => section
+                        .addTextDisplayComponents(
+                            textDisplay => textDisplay
+                                .setContent(`**${globalIndex}. ${ban.user.tag}**\n**ID:** \`${ban.user.id}\`\n**Reason:** ${truncatedReason}`)
+                        )
+                        .setThumbnailAccessory(
+                            thumbnail => thumbnail
+                                .setURL(ban.user.displayAvatarURL())
+                        )
+                );
+
+                if (index < currentBans.length - 1) {
+                    container.addSeparatorComponents(separator => separator);
+                }
+            });
+
+            // Add footer
+            container.addSeparatorComponents(separator => separator);
+            container.addTextDisplayComponents(
+                textDisplay => textDisplay
+                    .setContent(`*Total: ${banArray.length} banned users*`)
+            );
+
+            containers.push(container);
+        }
+
+        // Use pagination if more than one page
+        if (containers.length === 1) {
+            await interaction.editReply({
+                components: [containers[0]],
+                flags: MessageFlags.IsComponentsV2
+            });
+        } else {
+            await pagination(interaction, containers, false);
+        }
+
+    } catch (error) {
+        console.error('Error fetching ban list:', error);
+        const errorContainer = new ContainerBuilder()
+            .setAccentColor(getErrorColor(interaction.client))
+            .addTextDisplayComponents(
+                textDisplay => textDisplay
+                    .setContent('❌ Failed to fetch the ban list. Please check my permissions and try again.')
+            );
+
+        await interaction.editReply({
+            components: [errorContainer],
+            flags: MessageFlags.IsComponentsV2
+        });
+    }
+}
+
+/**
+ * Container pagination
+ *
+ * @param {BaseInteraction} interaction - The interaction that triggers the pagination.
+ * @param {Array} components - The containers to show.
+ * @param {boolean} ephemeral - Whether the pagination will be ephemeral or not.
+ */
+async function pagination(interaction, components, ephemeral) {
+    try {
+        if (!interaction || !components || !components.length > 0) throw new Error('[PAGINATION] Invalid args');
+
+        if (components.length === 1) {
+            return await interaction.editReply({
+                components: components,
+                flags: MessageFlags.IsComponentsV2,
+                fetchReply: true
+            });
+        }
+
+        var index = 0;
+
+        const { ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require('discord.js');
+
+        const first = new ButtonBuilder()
+            .setCustomId('pagefirst')
+            .setEmoji('⏪')
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(true);
+
+        const prev = new ButtonBuilder()
+            .setCustomId('pageprev')
+            .setEmoji('⬅️')
+            .setStyle(ButtonStyle.Primary)
+            .setDisabled(true);
+
+        const pageCount = new ButtonBuilder()
+            .setCustomId('pagecount')
+            .setLabel(`${index + 1}/${components.length}`)
+            .setStyle(ButtonStyle.Secondary)
+            .setDisabled(true);
+
+        const next = new ButtonBuilder()
+            .setCustomId('pagenext')
+            .setEmoji('➡️')
+            .setStyle(ButtonStyle.Primary);
+
+        const last = new ButtonBuilder()
+            .setCustomId('pagelast')
+            .setEmoji('⏩')
+            .setStyle(ButtonStyle.Primary);
+
+        const buttons = new ActionRowBuilder().addComponents([first, prev, pageCount, next, last]);
+
+        // Clone the container and add pagination buttons
+        const containerWithButtons = new ContainerBuilder(components[index].toJSON());
+        containerWithButtons.addActionRowComponents(buttons);
+
+        const msg = await interaction.editReply({
+            components: [containerWithButtons],
+            flags: MessageFlags.IsComponentsV2,
+            fetchReply: true
+        });
+
+        const collector = msg.createMessageComponentCollector({
+            componentType: ComponentType.Button,
+            time: 180000
+        });
+
+        collector.on('collect', async i => {
+            if (i.user.id !== interaction.user.id) {
+                return await i.reply({
+                    content: `Only **${interaction.user.username}** can use these buttons.`,
+                    ephemeral: true
+                });
+            }
+
+            if (i.customId === 'pagefirst') {
+                index = 0;
+                pageCount.setLabel(`${index + 1}/${components.length}`);
+            }
+
+            if (i.customId === 'pageprev') {
+                if (index > 0) index--;
+                pageCount.setLabel(`${index + 1}/${components.length}`);
+            }
+            else if (i.customId === 'pagenext') {
+                if (index < components.length - 1) {
+                    index++;
+                    pageCount.setLabel(`${index + 1}/${components.length}`);
+                }
+            }
+            else if (i.customId === 'pagelast') {
+                index = components.length - 1;
+                pageCount.setLabel(`${index + 1}/${components.length}`);
+            }
+
+            if (index === 0) {
+                first.setDisabled(true);
+                prev.setDisabled(true);
+            } else {
+                first.setDisabled(false);
+                prev.setDisabled(false);
+            }
+
+            if (index === components.length - 1) {
+                next.setDisabled(true);
+                last.setDisabled(true);
+            } else {
+                next.setDisabled(false);
+                last.setDisabled(false);
+            }
+
+            // Create new container with updated buttons
+            const updatedContainer = new ContainerBuilder(components[index].toJSON());
+            updatedContainer.addActionRowComponents(new ActionRowBuilder().addComponents([first, prev, pageCount, next, last]));
+
+            await i.update({
+                components: [updatedContainer],
+                flags: MessageFlags.IsComponentsV2
+            });
+
+            collector.resetTimer();
+        });
+
+        collector.on("end", () => {
+            try {
+                return interaction.editReply({
+                    components: [components[index]],
+                    flags: MessageFlags.IsComponentsV2
+                });
+            } catch (err) {
+                console.error('Error ending pagination:', err);
+            }
+        });
+
+        return msg;
+
+    } catch (e) {
+        console.error(`[PAGINATION ERROR] ${e}`);
+    }
+}
+
 // Helper function to parse duration strings
 function parseDuration(durationStr) {
     const match = durationStr.match(/^(\d+)([smhd])$/i);
@@ -889,4 +1170,4 @@ function parseDuration(durationStr) {
         case 'd': return value * 24 * 60 * 60 * 1000;
         default: return null;
     }
-                    }
+                }

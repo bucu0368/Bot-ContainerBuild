@@ -324,20 +324,23 @@ async function handleBan(interaction) {
 
         // Check if user is already banned
         try {
-            await interaction.guild.bans.fetch(targetUser.id);
+            const existingBan = await interaction.guild.bans.fetch(targetUser.id);
             const errorContainer = new ContainerBuilder()
                 .setAccentColor(getErrorColor(interaction.client))
                 .addTextDisplayComponents(
                     textDisplay => textDisplay
-                        .setContent('❌ This user is already banned.')
+                        .setContent('❌ This user is already banned from the server.')
                 );
 
             return await interaction.editReply({
                 components: [errorContainer],
                 flags: MessageFlags.IsComponentsV2
             });
-        } catch {
-            // User is not banned, continue
+        } catch (error) {
+            // User is not banned, continue with the ban process
+            if (error.code !== 10026) { // 10026 = Unknown Ban
+                console.error('Error checking ban status:', error);
+            }
         }
 
         // Execute the ban
@@ -1300,4 +1303,4 @@ function parseDuration(durationStr) {
         case 'd': return value * 24 * 60 * 60 * 1000;
         default: return null;
     }
-                                                   }
+                }
